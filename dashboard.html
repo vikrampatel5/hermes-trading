@@ -1,13 +1,703 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hermes Trading Bot Dashboard</title>
-    <style>
-        :root {
-            --bg-color: #0d1117;
-            --card-bg: #161b22;
-            --text-color: #e6e8ec;
-            --muted: #7d8591;
-            --accent: (this setup is taking into account the constraints, let me create
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes Trading Bot — Live Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg-2: #0f1525;
+    --card: #141b2d;
+    --card-hi: #1a2238;
+    --border: #1f2940;
+    --text: #e6e9f0;
+    --muted: #8b95a8;
+    --dim: #5a6378;
+    --accent: #5b8def;
+    --green: #26d782;
+    --green-dim: #1a8f5a;
+    --red: #ef5b6b;
+    --red-dim: #8f2d38;
+    --yellow: #f5b342;
+    --blue: #5b8def;
+    --purple: #a87ff0;
+    --cyan: #3ec3d4;
+    --shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif; font-size: 14px; line-height: 1.45; }
+  a { color: var(--accent); text-decoration: none; }
+
+  /* Layout */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px; background: var(--bg-2);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: white; font-size: 14px;
+  }
+  .brand-text { font-weight: 600; font-size: 16px; }
+  .brand-text small { color: var(--muted); font-weight: 400; font-size: 12px; display: block; }
+  .topbar-right { display: flex; align-items: center; gap: 18px; font-size: 13px; color: var(--muted); }
+  .pill { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .pill-live { background: rgba(38, 215, 130, 0.15); color: var(--green); border: 1px solid rgba(38,215,130,0.3); }
+  .pill-dead { background: rgba(239, 91, 107, 0.15); color: var(--red); border: 1px solid rgba(239,91,107,0.3); }
+  .pill-mode { background: rgba(91, 141, 239, 0.15); color: var(--accent); border: 1px solid rgba(91,141,239,0.3); }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 6px; animation: pulse 1.5s infinite; }
+  .pulse.dead { background: var(--red); animation: none; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  main { padding: 20px 24px 60px; max-width: 1800px; margin: 0 auto; }
+  h2.section { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 24px 0 12px; font-weight: 600; }
+
+  /* Stat cards */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 8px; }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .stat-value { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .stat.green .stat-value { color: var(--green); }
+  .stat.red .stat-value { color: var(--red); }
+  .stat.yellow .stat-value { color: var(--yellow); }
+  .stat.blue .stat-value { color: var(--blue); }
+  .stat.purple .stat-value { color: var(--purple); }
+  .stat.cyan .stat-value { color: var(--cyan); }
+
+  /* Grid */
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: 1.5fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 1100px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; box-shadow: var(--shadow); }
+  .card-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .card-title h3 { font-size: 14px; font-weight: 600; }
+  .card-title .meta { font-size: 11px; color: var(--muted); }
+
+  /* Tables */
+  .table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .table th, .table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+  .table th { color: var(--muted); font-weight: 500; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
+  .table tr:hover { background: var(--card-hi); }
+  .table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .table td.sym { font-weight: 600; }
+
+  .pos-long { color: var(--green); font-weight: 600; }
+  .pos-short { color: var(--red); font-weight: 600; }
+  .pos-flat { color: var(--muted); }
+  .pnl-pos { color: var(--green); }
+  .pnl-neg { color: var(--red); }
+
+  .badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .badge-long { background: rgba(38,215,130,0.15); color: var(--green); }
+  .badge-short { background: rgba(239,91,107,0.15); color: var(--red); }
+  .badge-flat { background: rgba(139,149,168,0.15); color: var(--muted); }
+
+  /* Chart container */
+  .chart-wrap { position: relative; height: 280px; }
+  .chart-wrap-sm { position: relative; height: 200px; }
+
+  /* Logs */
+  .logbox { font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 11px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 6px; padding: 12px; height: 280px; overflow-y: auto; white-space: pre-wrap; color: var(--muted); line-height: 1.5; }
+  .logbox .err { color: var(--red); }
+  .logbox .warn { color: var(--yellow); }
+  .logbox .info { color: var(--accent); }
+
+  /* Pair row sparkline */
+  .pair-row { display: grid; grid-template-columns: 1.4fr 0.8fr 0.7fr 0.7fr 0.8fr 0.6fr 0.5fr; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 12px; gap: 8px; }
+  .pair-row:hover { background: var(--card-hi); }
+  .pair-row .sym { font-weight: 600; }
+  .pair-row .lev { color: var(--yellow); font-weight: 600; }
+  .pair-row .vol { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pair-row .price { font-variant-numeric: tabular-nums; text-align: right; }
+
+  /* Header row */
+  .pair-header { display: grid; grid-template-columns: 1.4fr 0.8fr 0.7fr 0.7fr 0.8fr 0.6fr 0.5fr; gap: 8px; padding: 6px 10px; border-bottom: 2px solid var(--border); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+
+  /* Filter bar */
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
+  .filter-bar input, .filter-bar select { background: var(--bg-2); color: var(--text); border: 1px solid var(--border); padding: 6px 10px; border-radius: 6px; font-size: 12px; }
+  .filter-bar input { min-width: 140px; }
+  .filter-bar label { font-size: 11px; color: var(--muted); }
+
+  /* Scroll */
+  .scroll-y { max-height: 380px; overflow-y: auto; }
+  .scroll-y::-webkit-scrollbar, .logbox::-webkit-scrollbar { width: 6px; }
+  .scroll-y::-webkit-scrollbar-thumb, .logbox::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Refresh button */
+  .refresh-btn { background: var(--card-hi); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .refresh-btn:hover { background: var(--accent); border-color: var(--accent); }
+
+  .live-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; display: inline-block; margin-right: 4px; animation: pulse 1s infinite; }
+
+  /* Helpers */
+  .text-muted { color: var(--muted); }
+  .text-dim { color: var(--dim); }
+  .text-right { text-align: right; }
+  .text-center { text-align: center; }
+  .mt-1 { margin-top: 8px; } .mt-2 { margin-top: 16px; } .mt-3 { margin-top: 24px; }
+  .mono { font-family: 'SF Mono', Menlo, Consolas, monospace; }
+  .small { font-size: 11px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">H</div>
+    <div class="brand-text">
+      Hermes Trading Bot
+      <small>Multi-pair RSI mean-reversion • Delta Exchange</small>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="pill pill-mode" id="modeBadge">MODE: ?</span>
+    <span id="connStatus"><span class="pulse" id="connDot"></span> <span id="connText">connecting…</span></span>
+    <span class="text-muted small" id="lastUpdate">never</span>
+    <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+  </div>
+</div>
+
+<main>
+
+  <!-- Top stats -->
+  <div class="stats" id="topStats">
+    <div class="stat"><div class="stat-label">Net Equity</div><div class="stat-value" id="stat-equity">—</div><div class="stat-sub" id="stat-equity-sub">wallet</div></div>
+    <div class="stat green"><div class="stat-label">Total PnL</div><div class="stat-value" id="stat-pnl">—</div><div class="stat-sub" id="stat-pnl-sub">across all closed trades</div></div>
+    <div class="stat blue"><div class="stat-label">Win Rate</div><div class="stat-value" id="stat-winrate">—</div><div class="stat-sub" id="stat-winrate-sub">closed trades</div></div>
+    <div class="stat yellow"><div class="stat-label">Sharpe</div><div class="stat-value" id="stat-sharpe">—</div><div class="stat-sub" id="stat-sharpe-sub">risk-adjusted return</div></div>
+    <div class="stat purple"><div class="stat-label">Open Positions</div><div class="stat-value" id="stat-open">—</div><div class="stat-sub" id="stat-open-sub">local + exchange</div></div>
+    <div class="stat cyan"><div class="stat-label">Universe</div><div class="stat-value" id="stat-universe">—</div><div class="stat-sub" id="stat-universe-sub">tradable perps</div></div>
+  </div>
+
+  <!-- Charts row -->
+  <h2 class="section">Performance</h2>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">
+        <h3>Cumulative PnL</h3>
+        <span class="meta">last <span id="equityCount">0</span> closed trades</span>
+      </div>
+      <div class="chart-wrap"><canvas id="equityChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <h3>PnL Distribution</h3>
+        <span class="meta">per-trade outcomes</span>
+      </div>
+      <div class="chart-wrap"><canvas id="pnlDistChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Strategy & Wallet -->
+  <h2 class="section">Account</h2>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">
+        <h3>Strategy &amp; Worker</h3>
+        <span class="meta" id="strategyMeta">v?</span>
+      </div>
+      <table class="table" id="strategyTable">
+        <tbody>
+          <tr><td>Strategy version</td><td class="num" id="strat-version">—</td></tr>
+          <tr><td>Worker status</td><td class="num"><span class="badge badge-long" id="strat-worker">—</span></td></tr>
+          <tr><td>Worker last seen</td><td class="num" id="strat-lastseen">—</td></tr>
+          <tr><td>Last keepalive</td><td class="num" id="strat-keepalive">—</td></tr>
+          <tr><td>Closed trades</td><td class="num" id="strat-closed">—</td></tr>
+          <tr><td>Consecutive losses</td><td class="num" id="strat-consec">—</td></tr>
+          <tr><td>Average trade</td><td class="num" id="strat-avg">—</td></tr>
+          <tr><td>Largest win</td><td class="num pnl-pos" id="strat-largestwin">—</td></tr>
+          <tr><td>Largest loss</td><td class="num pnl-neg" id="strat-largestloss">—</td></tr>
+          <tr><td>Profit factor</td><td class="num" id="strat-pf">—</td></tr>
+          <tr><td>Score</td><td class="num" id="strat-score">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <h3>Wallet (Delta Exchange)</h3>
+        <span class="meta" id="walletStatus">—</span>
+      </div>
+      <table class="table" id="walletTable">
+        <thead><tr><th>Asset</th><th class="text-right">Available</th><th class="text-right">Total</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="text-muted small mt-2" id="walletError"></div>
+    </div>
+  </div>
+
+  <!-- Universe -->
+  <h2 class="section">Trading Universe</h2>
+  <div class="card">
+    <div class="filter-bar">
+      <label>Filter:</label>
+      <input type="text" id="pairFilter" placeholder="search symbol…" oninput="renderPairs()">
+      <select id="posFilter" onchange="renderPairs()">
+        <option value="all">All positions</option>
+        <option value="long">Long only</option>
+        <option value="short">Short only</option>
+        <option value="flat">Flat only</option>
+      </select>
+      <span class="text-muted small" id="pairsCount"></span>
+    </div>
+    <div class="pair-header">
+      <div>Symbol</div>
+      <div class="text-right">Mark</div>
+      <div class="text-right">24h Vol</div>
+      <div class="text-right">Leverage</div>
+      <div class="text-right">Position</div>
+      <div class="text-right">Entry</div>
+      <div>Signal</div>
+    </div>
+    <div class="scroll-y" id="pairsList" style="max-height: 480px;"></div>
+  </div>
+
+  <!-- Live positions & signals -->
+  <h2 class="section">Live Activity</h2>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">
+        <h3>Exchange Positions</h3>
+        <span class="meta">from Delta API</span>
+      </div>
+      <table class="table">
+        <thead><tr><th>Symbol</th><th class="text-right">Size</th><th class="text-right">Entry</th><th class="text-right">Mark</th></tr></thead>
+        <tbody id="positionsBody"><tr><td colspan="4" class="text-muted text-center">loading…</td></tr></tbody>
+      </table>
+      <div class="text-muted small mt-1">Note: testnet only returns BTC + ETH positions. Other perps are still traded but don't show here.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <h3>Recent Signals</h3>
+        <span class="meta">last 10 events</span>
+      </div>
+      <table class="table">
+        <thead><tr><th>Time</th><th>Symbol</th><th>Signal</th><th class="text-right">Lev</th></tr></thead>
+        <tbody id="signalsBody"><tr><td colspan="4" class="text-muted text-center">loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent trades -->
+  <h2 class="section">Recent Trades</h2>
+  <div class="card">
+    <div class="card-title">
+      <h3>Trade Log</h3>
+      <span class="meta" id="tradesCount">0 trades</span>
+    </div>
+    <div class="scroll-y" style="max-height: 400px;">
+      <table class="table" id="tradesTable">
+        <thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th class="text-right">Entry</th><th class="text-right">Exit</th><th class="text-right">Contracts</th><th class="text-right">Lev</th><th class="text-right">PnL %</th><th>Reason</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Logs & Brain -->
+  <h2 class="section">Diagnostics</h2>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">
+        <h3>Worker Log</h3>
+        <span class="meta" id="logFile">—</span>
+      </div>
+      <div class="logbox" id="logBox">loading…</div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <h3>Brain Hypotheses</h3>
+        <span class="meta">reflector output</span>
+      </div>
+      <div class="logbox" id="hypothesesBox">loading…</div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // ---------- state ----------
+  let equityChart, pnlDistChart;
+  let lastData = {};
+
+  // ---------- formatters ----------
+  const fmtUSD = (n) => n == null ? '—' : '$' + Number(n).toLocaleString('en-US', {maximumFractionDigits: 2, minimumFractionDigits: 2});
+  const fmtNum = (n, d=2) => n == null ? '—' : Number(n).toLocaleString('en-US', {maximumFractionDigits: d, minimumFractionDigits: d});
+  const fmtPct = (n, d=2) => n == null ? '—' : (n >= 0 ? '+' : '') + Number(n).toFixed(d) + '%';
+  const fmtPctRaw = (n, d=2) => n == null ? '—' : Number(n).toFixed(d) + '%';
+  const fmtVol = (n) => {
+    if (n == null) return '—';
+    if (n > 1e9) return (n/1e9).toFixed(2) + 'B';
+    if (n > 1e6) return (n/1e6).toFixed(2) + 'M';
+    if (n > 1e3) return (n/1e3).toFixed(2) + 'K';
+    return n.toFixed(0);
+  };
+  const fmtTime = (s) => {
+    if (!s) return '—';
+    try { return new Date(s).toLocaleString(); } catch (e) { return s; }
+  };
+  const fmtAge = (s) => {
+    if (s == null) return '—';
+    if (s < 60) return s.toFixed(0) + 's ago';
+    if (s < 3600) return (s/60).toFixed(0) + 'm ago';
+    if (s < 86400) return (s/3600).toFixed(1) + 'h ago';
+    return (s/86400).toFixed(1) + 'd ago';
+  };
+  const fmtTs = (s) => {
+    if (!s) return '—';
+    try { return new Date(s).toLocaleTimeString(); } catch (e) { return s; }
+  };
+
+  function setText(id, value) { const e = document.getElementById(id); if (e) e.textContent = value; }
+  function setHTML(id, value) { const e = document.getElementById(id); if (e) e.innerHTML = value; }
+
+  // ---------- API ----------
+  async function api(path) {
+    try {
+      const r = await fetch(path);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const data = await r.json();
+      return data;
+    } catch (e) {
+      document.getElementById('connText').textContent = 'offline';
+      document.getElementById('connDot').className = 'pulse dead';
+      throw e;
+    }
+  }
+
+  // ---------- loaders ----------
+  async function loadAll() {
+    try {
+      const [overview, perf, trades, equityCurve, pairs, signals, wallet, positions, universe, strategy, hypotheses, logs, heartbeat] = await Promise.all([
+        api('/api/overview'),
+        api('/api/performance'),
+        api('/api/trades?limit=50'),
+        api('/api/equity-curve?limit=200'),
+        api('/api/pairs'),
+        api('/api/signals?limit=10'),
+        api('/api/wallet'),
+        api('/api/positions'),
+        api('/api/universe'),
+        api('/api/strategy'),
+        api('/api/hypotheses?limit=20'),
+        api('/api/logs?max_bytes=4000'),
+        api('/api/heartbeat'),
+      ]);
+
+      document.getElementById('connText').textContent = 'connected';
+      document.getElementById('connDot').className = 'pulse';
+
+      // Save for filter usage
+      lastData.pairs = pairs.pairs || [];
+      lastData.trades = trades;
+
+      renderOverview(overview, perf, wallet);
+      renderEquityCurve(equityCurve);
+      renderPnlDistribution(trades);
+      renderStrategy(strategy, perf, heartbeat);
+      renderWallet(wallet);
+      renderPairs();
+      renderSignals(signals);
+      renderPositions(positions);
+      renderTrades(trades);
+      renderHypotheses(hypotheses);
+      renderLogs(logs);
+
+      document.getElementById('lastUpdate').textContent = 'updated ' + new Date().toLocaleTimeString();
+    } catch (e) {
+      console.error('Load failed:', e);
+    }
+  }
+
+  // ---------- renderers ----------
+  function renderOverview(ov, perf, wallet) {
+    // Equity
+    const eq = wallet.net_equity;
+    setText('stat-equity', eq ? fmtUSD(eq) : '—');
+    setText('stat-equity-sub', eq ? 'from Delta' : 'no wallet data');
+
+    // PnL
+    const pnl = perf.total_pnl_pct;
+    const pnlEl = document.getElementById('stat-pnl');
+    pnlEl.textContent = pnl != null ? fmtPct(pnl, 3) : '—';
+    pnlEl.parentElement.className = 'stat ' + (pnl > 0 ? 'green' : pnl < 0 ? 'red' : '');
+    setText('stat-pnl-sub', (perf.trade_count || 0) + ' closed trades');
+
+    // Win rate
+    setText('stat-winrate', perf.win_rate != null ? fmtPctRaw(perf.win_rate, 1) : '—');
+    setText('stat-winrate-sub', (perf.trade_count || 0) + ' closed');
+
+    // Sharpe
+    setText('stat-sharpe', perf.sharpe != null ? Number(perf.sharpe).toFixed(2) : '—');
+    setText('stat-sharpe-sub', 'risk-adjusted return');
+
+    // Open positions
+    const openCount = ov.open_positions || 0;
+    setText('stat-open', openCount);
+    setText('stat-open-sub',
+      `${ov.long_positions || 0}L / ${ov.short_positions || 0}S` +
+      (ov.live_positions ? ` • ${ov.live_positions} on exchange` : ''));
+
+    // Universe
+    setText('stat-universe', ov.universe_size || 0);
+    setText('stat-universe-sub', 'tradable perps');
+
+    // Mode badge
+    setText('modeBadge', 'MODE: ' + ((ov.heartbeat.worker_status || 'unknown').toUpperCase()));
+  }
+
+  function renderEquityCurve(curve) {
+    const labels = curve.map(c => {
+      try { return new Date(c.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+      catch (e) { return ''; }
+    });
+    const data = curve.map(c => c.cumulative_pnl_pct);
+
+    setText('equityCount', curve.length);
+
+    if (equityChart) equityChart.destroy();
+    const ctx = document.getElementById('equityChart').getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 280);
+    grad.addColorStop(0, 'rgba(91, 141, 239, 0.3)');
+    grad.addColorStop(1, 'rgba(91, 141, 239, 0)');
+
+    equityChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Cumulative PnL %',
+          data,
+          borderColor: '#5b8def',
+          backgroundColor: grad,
+          fill: true,
+          tension: 0.3,
+          pointRadius: 0,
+          borderWidth: 2,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+        scales: {
+          x: { ticks: { color: '#5a6378', maxTicksLimit: 8, font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+          y: { ticks: { color: '#5a6378', font: { size: 10 }, callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        },
+      },
+    });
+  }
+
+  function renderPnlDistribution(trades) {
+    const buckets = { '<-5': 0, '-5 to -1': 0, '-1 to 0': 0, '0 to 1': 0, '1 to 5': 0, '>5': 0 };
+    trades.forEach(t => {
+      const p = parseFloat(t.pnl_pct || t.pnl || 0);
+      if (p < -5) buckets['<-5']++;
+      else if (p < -1) buckets['-5 to -1']++;
+      else if (p < 0) buckets['-1 to 0']++;
+      else if (p < 1) buckets['0 to 1']++;
+      else if (p < 5) buckets['1 to 5']++;
+      else buckets['>5']++;
+    });
+
+    if (pnlDistChart) pnlDistChart.destroy();
+    const ctx = document.getElementById('pnlDistChart').getContext('2d');
+    pnlDistChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(buckets),
+        datasets: [{
+          data: Object.values(buckets),
+          backgroundColor: [
+            '#ef5b6b', '#ef7d5b', '#f5a342', '#a8d342', '#5bd47a', '#26d782',
+          ],
+          borderRadius: 4,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#5a6378', font: { size: 10 } }, grid: { display: false } },
+          y: { ticks: { color: '#5a6378', font: { size: 10 }, stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        },
+      },
+    });
+  }
+
+  function renderStrategy(strategy, perf, hb) {
+    setText('strategyMeta', 'v' + (perf.current_strategy_version || '?'));
+    setText('strat-version', perf.current_strategy_version || strategy.current?.version || '—');
+    const ws = hb.worker_status || 'unknown';
+    const wsEl = document.getElementById('strat-worker');
+    wsEl.textContent = ws;
+    wsEl.className = 'badge ' + (ws === 'running' ? 'badge-long' : 'badge-short');
+    setText('strat-lastseen', hb.last_keepalive ? fmtAge(hb.keepalive_age_seconds) : '—');
+    setText('strat-keepalive', hb.last_keepalive ? fmtTime(hb.last_keepalive) + (hb.keepalive_source ? ` <span class="text-dim">(${hb.keepalive_source})</span>` : '') : '—');
+    setText('strat-closed', perf.trade_count || 0);
+    setText('strat-consec', perf.consecutive_losses || 0);
+    setText('strat-avg', perf.average_pnl_pct != null ? fmtPct(perf.average_pnl_pct, 3) : '—');
+    setText('strat-largestwin', perf.largest_win != null ? fmtPct(perf.largest_win, 3) : '—');
+    setText('strat-largestloss', perf.largest_loss != null ? fmtPct(perf.largest_loss, 3) : '—');
+    setText('strat-pf', perf.profit_factor != null ? Number(perf.profit_factor).toFixed(2) : '—');
+    setText('strat-score', hb.current_score != null ? Number(hb.current_score).toFixed(2) : '—');
+  }
+
+  function renderWallet(wallet) {
+    setText('walletStatus', wallet.status === 'ok' ? 'live' : (wallet.status || 'unknown'));
+    const tbody = document.querySelector('#walletTable tbody');
+    const entries = Object.entries(wallet.balances || {});
+    if (entries.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" class="text-muted text-center">no balances</td></tr>';
+    } else {
+      tbody.innerHTML = entries
+        .filter(([_, b]) => b.total > 0 || b.available > 0)
+        .sort((a, b) => (b[1].total) - (a[1].total))
+        .map(([ccy, b]) => `<tr>
+          <td><strong>${ccy}</strong></td>
+          <td class="text-right mono">${fmtNum(b.available, 4)}</td>
+          <td class="text-right mono">${fmtNum(b.total, 4)}</td>
+        </tr>`).join('');
+    }
+    setText('walletError', wallet.status === 'error' ? ('⚠ ' + (wallet.error || 'unknown')) : '');
+  }
+
+  function renderPairs() {
+    const filter = (document.getElementById('pairFilter').value || '').toUpperCase();
+    const posFilter = document.getElementById('posFilter').value;
+    const list = (lastData.pairs || []).filter(p => {
+      if (filter && !p.symbol.includes(filter)) return false;
+      if (posFilter === 'long' && p.position_size <= 0) return false;
+      if (posFilter === 'short' && p.position_size >= 0) return false;
+      if (posFilter === 'flat' && p.position_size !== 0) return false;
+      return true;
+    });
+
+    setText('pairsCount', `${list.length} of ${(lastData.pairs || []).length} pairs`);
+
+    const html = list.map(p => {
+      const side = p.position_side;
+      const badge = side === 'long' ? '<span class="badge badge-long">LONG</span>'
+                  : side === 'short' ? '<span class="badge badge-short">SHORT</span>'
+                  : '<span class="badge badge-flat">FLAT</span>';
+      return `<div class="pair-row">
+        <div class="sym">${p.symbol} <span class="text-dim small">#${p.rank}</span></div>
+        <div class="price">${fmtNum(p.mark_price, p.mark_price < 1 ? 6 : 2)}</div>
+        <div class="vol text-right">${fmtVol(p.volume_24h)}</div>
+        <div class="lev text-right">${p.max_leverage}x / ${p.trading_leverage}x</div>
+        <div class="text-right"><span class="pos-${side}">${p.position_size || 0}</span></div>
+        <div class="text-right text-muted">${p.entry_price ? fmtNum(p.entry_price, p.entry_price < 1 ? 6 : 2) : '—'}</div>
+        <div>${badge}</div>
+      </div>`;
+    }).join('');
+    document.getElementById('pairsList').innerHTML = html || '<div class="text-muted text-center small" style="padding:20px;">no matches</div>';
+  }
+
+  function renderSignals(signals) {
+    const tbody = document.getElementById('signalsBody');
+    if (!signals || signals.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center">no signals yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = signals.map(s => {
+      const sig = s.signal || '?';
+      const isLong = sig.includes('long') || sig === 'long';
+      const isShort = sig.includes('short') || sig === 'short';
+      const badge = isLong ? '<span class="badge badge-long">LONG</span>'
+                    : isShort ? '<span class="badge badge-short">SHORT</span>'
+                    : `<span class="text-muted small">${sig}</span>`;
+      return `<tr>
+        <td class="text-muted small">${fmtTs(s.timestamp)}</td>
+        <td><strong>${s.symbol || '—'}</strong></td>
+        <td>${badge}</td>
+        <td class="text-right">${s.leverage || '—'}x</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderPositions(positions) {
+    const tbody = document.getElementById('positionsBody');
+    const list = positions.positions || [];
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center">no live positions</td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(p => {
+      if (p._error) return `<tr><td colspan="4" class="text-muted small">${p._queried_underlying}: ${p._error}</td></tr>`;
+      const size = parseFloat(p.size || 0);
+      const cls = size > 0 ? 'pos-long' : size < 0 ? 'pos-short' : 'pos-flat';
+      return `<tr>
+        <td><strong>${p.product_symbol || '—'}</strong></td>
+        <td class="text-right ${cls}">${size}</td>
+        <td class="text-right mono">${fmtNum(p.entry_price, 2)}</td>
+        <td class="text-right mono">${fmtNum(p.mark_price || 0, 2)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderTrades(trades) {
+    setText('tradesCount', (trades || []).length + ' trades');
+    const tbody = document.querySelector('#tradesTable tbody');
+    if (!trades || trades.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" class="text-muted text-center">no closed trades yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = trades.map(t => {
+      const pnl = parseFloat(t.pnl_pct || t.pnl || 0);
+      const cls = pnl > 0 ? 'pnl-pos' : pnl < 0 ? 'pnl-neg' : '';
+      const side = t.side || '?';
+      const sideCls = side === 'long' ? 'badge badge-long' : side === 'short' ? 'badge badge-short' : 'text-muted';
+      return `<tr>
+        <td class="text-muted small mono">${fmtTime(t.timestamp || t.time)}</td>
+        <td><strong>${t.symbol || '—'}</strong></td>
+        <td><span class="${sideCls}">${side.toUpperCase()}</span></td>
+        <td class="text-right mono">${fmtNum(t.entry_price, t.entry_price < 1 ? 6 : 2)}</td>
+        <td class="text-right mono">${fmtNum(t.exit_price, t.exit_price < 1 ? 6 : 2)}</td>
+        <td class="text-right">${t.contracts || t.size || '—'}</td>
+        <td class="text-right">${t.leverage || '—'}x</td>
+        <td class="text-right ${cls}">${fmtPct(pnl, 3)}</td>
+        <td class="text-muted small">${t.reason || '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderHypotheses(hypotheses) {
+    const box = document.getElementById('hypothesesBox');
+    if (!hypotheses || hypotheses.length === 0) {
+      box.textContent = 'No hypotheses logged yet.';
+      return;
+    }
+    box.innerHTML = hypotheses.map(h => {
+      const accepted = h.accepted ? '<span class="badge badge-long">ACCEPTED</span>' : '<span class="badge badge-flat">REJECTED</span>';
+      return `<div style="margin-bottom: 8px;">
+        <div>${accepted} <span class="text-muted">${fmtTime(h.timestamp)}</span></div>
+        <div class="info">v${h.previous_version} → v${h.strategy_version} • changed: <code>${h.variable_changed || '?'}</code></div>
+        <div>${h.reason || ''}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderLogs(logs) {
+    document.getElementById('logFile').textContent = logs.log_file || '—';
+    let text = logs.content || '';
+    // Highlight errors
+    text = text.replace(/ERROR/gi, '<span class="err">ERROR</span>')
+               .replace(/WARN(ING)?/gi, '<span class="warn">WARN</span>')
+               .replace(/INFO/gi, '<span class="info">INFO</span>');
+    document.getElementById('logBox').innerHTML = text || '(empty)';
+  }
+
+  // ---------- init ----------
+  loadAll();
+  setInterval(loadAll, 10000);  // refresh every 10s
+</script>
+
+</body>
+</html>
