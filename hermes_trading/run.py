@@ -380,3 +380,60 @@ class TradingWorker:
             self.daily_loss_tracker = 0.0
             self.last_daily_reset = today
         return self.daily_loss_tracker
+
+async def _health_handler(request):
+    from aiohttp import web
+    return web.json_response({"status": "ok", "service": "hermes-trading", "timestamp": datetime.now(timezone.utc).isoformat()})
+
+async def _status_handler(request):
+    from aiohttp import web
+    project_root = Path(__file__).parent.parent
+    heartbeat_file = project_root / "state" / "heartbeat.json"
+    hb = {}
+    if heartbeat_file.exists():
+        try:
+            with open(heartbeat_file, "r") as f:
+                hb = json.load(f)
+        except Exception:
+            pass
+    return web.json_response({
+        "status": "running",
+        "service": "hermes-trading-worker",
+        "asset": settings.ASSET,
+        "trading_mode": settings.TRADING_MODE,
+        "heartbeat": hb
+    })
+
+async def async_main():
+    import argparse
+    from aiohttp import web
+
+    parser = argparse.ArgumentParser(description="Hermes Trading Bot Worker")
+    parser.add_argument("--asset", type=str, default=None, help="Asset ticker override")
+    args, _ = parser.parse_known_args()
+
+    if args.asset:
+        settings.ASSET = args.asset
+
+    print(f"[worker] Booting hermes-trading worker for {settings.ASSET}...")
+    worker = TradingWorker()
+
+    port = int(os.getenv("PORT", 10000))
+    app = web.Application()
+    app.router.add_get("/", _status_handler)
+    app.router.add_get("/health", _health_handler)
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    print(f"[worker] HTTP healthcheck & status server live on port {port}")
+
+    # Run the worker trading loop
+    await worker.run()
+
+def main():
+    asyncio.run(async_main())
+
+if __name__ == "__main__":
+    main()
