@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+/.venv
+/venv
+/environment/
+
+# Environment
+.env
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Trading state
+state/trades.jsonl
+state/performance.json
+state/heartbeat.json
+state/hypotheses.jsonl
+state/goal.yaml
+state/strategy.yaml
+
+# Backtest results
+state/backtests/
+
+# Logs
+state/logs/
+
+# Service files
+services/

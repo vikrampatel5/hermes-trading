@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "hermes-trading-bot"
+version = "0.1.0"
+description = "Local self-improving trading bot"
+dependencies = [
+    "ccxt",
+    "yfinance",
+    "pyyaml",
+    "httpx",
+    "aiofiles",
+    "numpy",
+    "pandas",
+    "rich",
+]

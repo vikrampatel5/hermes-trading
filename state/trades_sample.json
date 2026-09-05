@@ -1,0 +1,18 @@
+[
+  {
+    "timestamp": "2024-01-15T14:30:00",
+    "symbol": "BTC/USDT",
+    "strategy_version": "0001",
+    "side": "long",
+    "entry_price": 45230.00,
+    "exit_price": 45610.00,
+    "position_size": 0.05,
+    "fees": 1.25,
+    "slippage": 0.35,
+    "pnl": 380.00,
+    "pnl_pct": 0.76,
+    "holding_period": 2.5,
+    "market_regime": "bull_trend",
+    "reason": "RSI oversold entry with trend filter"
+  }
+]
