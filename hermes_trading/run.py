@@ -381,6 +381,15 @@ class TradingWorker:
             self.last_daily_reset = today
         return self.daily_loss_tracker
 
+    async def _write_error_log(self, error: Exception) -> None:
+        """Write error to logs file."""
+        log_dir = self.state_dir / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = log_dir / "worker_errors.log"
+        with open(log_file, "a", encoding="utf-8") as f:
+            ts = datetime.now(timezone.utc).isoformat()
+            f.write(f"[{ts}] {type(error).__name__}: {str(error)}\n")
+
 async def _health_handler(request):
     from aiohttp import web
     return web.json_response({"status": "ok", "service": "hermes-trading", "timestamp": datetime.now(timezone.utc).isoformat()})
