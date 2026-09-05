@@ -57,6 +57,34 @@ class DataEngine:
         except Exception:
             pass
 
+        # 2. Try Delta Exchange testnet
+        if settings.DELTA_MODE == "testnet":
+            try:
+                from hermes_trading.adapters.delta import fetch_price_sync_ohlc_sync
+                delta_data = fetch_ohlc_sync(
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    limit=limit,
+                    mode="testnet"
+                )
+                if delta_data.get("status") == "ok" and delta_data.get("candles"):
+                    candles = delta_data["candles"]
+                    rows = []
+                    for c in candles:
+                        rows.append({
+                            "timestamp": pd.to_datetime(c["timestamp"], unit="ms"),
+                            "open": float(c["open"]),
+                            "high": float(c["high"]),
+                            "low": float(c["low"]),
+                            "close": float(c["close"]),
+                            "volume": float(c["volume"]),
+                        })
+                    df = pd.DataFrame(rows)
+                    df.set_index("timestamp", inplace=True)
+                    return df
+            except Exception:
+                pass
+
         # 2. Fallback: generate high-fidelity simulated candles based on live spot price
         current = self.fetch_current_data(symbol, timeframe)
         base_price = current["close"] if current else 65000.0
@@ -106,6 +134,25 @@ class DataEngine:
                     }
         except Exception:
             pass
+
+        # Try Delta Exchange testnet ticker
+        if settings.DELTA_MODE == "testnet":
+            try:
+                from hermes_trading.adapters.delta import fetch_price_sync
+                delta_data = fetch_price_sync(symbol=symbol, mode="testnet")
+                if delta_data.get("status") == "ok":
+                    p = delta_data.get("price", 0)
+                    if p > 0:
+                        return {
+                            "timestamp": delta_data.get("timestamp", datetime.now(timezone.utc)),
+                            "open": p,
+                            "high": p * 1.001,
+                            "low": p * 0.999,
+                            "close": p,
+                            "volume": delta_data.get("volume_24h", 10.0)
+                        }
+            except Exception:
+                pass
 
         # Fallback default
         return {

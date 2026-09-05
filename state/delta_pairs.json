@@ -1,0 +1,156 @@
+{
+  "top_20_by_volume": [
+    {
+      "product_id": 162764,
+      "symbol": "1000SHIBUSD",
+      "underlying": null,
+      "quote": null,
+      "volume_24h": 38980000.0,
+      "mark_price": 0.005445,
+      "max_leverage": "n/a",
+      "contract_value": "1000"
+    },
+    {
+      "product_id": 101555,
+      "symbol": "DOGEUSD",
+      "underlying": null,
+      "quote": null,
+      "volume_24h": 25231600.0,
+      "mark_price": 0.08747,
+      "max_leverage": "n/a",
+      "contract_value": "100"
+    },
+    {
+      "product_id": 101760,
+      "symbol": "ADAUSD",
+      "underlying": null,
+      "quote": null,
+      "volume_24h": 8613578.0,
+      "mark_price": 0.21655,
+      "max_leverage": "n/a",
+      "contract_value": "1"
+    },
+    {
+      "product_id": 93723,
+      "symbol": "XRPUSD",
+      "underlying": null,
+      "quote": null,
+      "volume_24h": 3401113.0,
+      "mark_price": 1.412,
+      "max_leverage": "n/a",
+      "contract_value": "1"
+    },
+    {
+      "product_id": 92572,
+      "symbol": "SOLUSD",
+      "underlying": null,
+      "quote": null,
+      "volume_24h": 51186.0,
+      "mark_price": 103.267,
+      "max_leverage": "n/a",
+      "contract_value": "1"
+    },
+    {
+      "product_id": 1699,
+      "symbol": "ETHUSD",
+      "underlying": null,
+      "quote": null,
+      "volume_24h": 14700.760000000138,
+      "mark_price": 2457.55,
+      "max_leverage": "n/a",
+      "contract_value": "0.01"
+    },
+    {
+      "product_id": 181689,
+      "symbol": "XAUTUSD",
+      "underlying": null,
+      "quote": null,
+      "volume_24h": 10733.658000000225,
+      "mark_price": 4422.79,
+      "max_leverage": "n/a",
+      "contract_value": "0.001"
+    },
+    {
+      "product_id": 184019,
+      "symbol": "SLVONUSD",
+      "underlying": null,
+      "quote": null,
+      "volume_24h": 8245.8,
+      "mark_price": 59.86,
+      "max_leverage": "n/a",
+      "contract_value": "0.1"
+    },
+    {
+      "product_id": 84,
+      "symbol": "BTCUSD",
+      "underlying": null,
+      "quote": null,
+      "volume_24h": 2463.2709999997996,
+      "mark_price": 79661.0,
+      "max_leverage": "n/a",
+      "contract_value": "0.001"
+    },
+    {
+      "product_id": 165774,
+      "symbol": "NVDAXUSD",
+      "underlying": null,
+      "quote": null,
+      "volume_24h": 1556.3000000000025,
+      "mark_price": 230.85,
+      "max_leverage": "n/a",
+      "contract_value": "0.1"
+    },
+    {
+      "product_id": 189558,
+      "symbol": "SNDKBUSD",
+      "underlying": null,
+      "quote": null,
+      "volume_24h": 1023.7199999999982,
+      "mark_price": 1761.41,
+      "max_leverage": "n/a",
+      "contract_value": "0.01"
+    },
+    {
+      "product_id": 169532,
+      "symbol": "PAXGUSD",
+      "underlying": null,
+      "quote": null,
+      "volume_24h": 514.911,
+      "mark_price": 4430.47,
+      "max_leverage": "n/a",
+      "contract_value": "0.001"
+    },
+    {
+      "product_id": 184021,
+      "symbol": "SPYXUSD",
+      "underlying": null,
+      "quote": null,
+      "volume_24h": 186.74,
+      "mark_price": 771.78,
+      "max_leverage": "n/a",
+      "contract_value": "0.01"
+    },
+    {
+      "product_id": 184020,
+      "symbol": "QQQXUSD",
+      "underlying": null,
+      "quote": null,
+      "volume_24h": 112.72999999999999,
+      "mark_price": 720.0,
+      "max_leverage": "n/a",
+      "contract_value": "0.01"
+    },
+    {
+      "product_id": 192449,
+      "symbol": "USOONUSD",
+      "underlying": null,
+      "quote": null,
+      "volume_24h": 65.6,
+      "mark_price": 1.01,
+      "max_leverage": "n/a",
+      "contract_value": "0.1"
+    }
+  ],
+  "all_perps_count": 15,
+  "last_updated": 1788613419.8408947
+}

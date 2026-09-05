@@ -37,6 +37,11 @@ class Settings:
     EXCHANGE_API_KEY: str = os.getenv("EXCHANGE_API_KEY", "")
     EXCHANGE_API_SECRET: str = os.getenv("EXCHANGE_API_SECRET", "")
 
+    # Supported exchanges
+    EXCHANGE: str = os.getenv("EXCHANGE", "binance")
+    # Delta Exchange India settings
+    DELTA_MODE: str = os.getenv("DELTA_MODE", "testnet")  # "testnet" or "live"
+
     # API keys (optional)
     NEWS_API_KEY: str = os.getenv("NEWS_API_KEY", "")
     MACRO_API_KEY: str = os.getenv("MACRO_API_KEY", "")

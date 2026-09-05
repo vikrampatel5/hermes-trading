@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: hermes-trading
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: HERMES_TRADING_MODE
+        value: paper
+      - key: HERMES_TRADING_I_ACCEPT_RISK
+        value: "false"
+      - key: EXCHANGE
+        value: delta_india
+      - key: DELTA_MODE
+        value: testnet
+      - key: PORT
+        value: "10000"
+      # Set EXCHANGE_API_KEY and EXCHANGE_API_SECRET via the Render dashboard
+      # (Environment tab → Secret Files), NOT here. They never enter git.
+      - key: PYTHONUNBUFFERED
+        value: "1"
+
+  - type: cron
+    name: hermes-keepalive
+    runtime: python
+    plan: free
+    schedule: "* * * * *"   # every minute
+    entrypoint: ["python", "-c"]
+    cmd: >-
+      import os, sys, urllib.request;
+      url = "https://" + os.environ["RENDER_EXTERNAL_HOSTNAME"] + "/health";
+      r = urllib.request.urlopen(url, timeout=10);
+      print(r.status, r.read()[:80])
+    envVars:
+      - key: RENDER_EXTERNAL_HOSTNAME
+        sync: false   # populated automatically from the web service name above
+      - fromService:
+          name: hermes-trading
+          type: web
+          property: host
+        key: RENDER_EXTERNAL_HOSTNAME

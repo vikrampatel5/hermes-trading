@@ -391,8 +391,42 @@ class TradingWorker:
             f.write(f"[{ts}] {type(error).__name__}: {str(error)}\n")
 
 async def _health_handler(request):
+    """Liveness probe. Touches heartbeat.json so Render's idle-detector sees activity.
+
+    Render pauses free instances after ~15 min of no HTTP traffic. The trading
+    loop already writes heartbeat.json every WORKER_SLEEP_SECONDS (default 10s),
+    but on a paused/just-resumed instance that may not be enough. This handler
+    is hit by an external cron (Render cron job, see render.yaml) once a minute
+    to keep the instance warm.
+    """
     from aiohttp import web
-    return web.json_response({"status": "ok", "service": "hermes-trading", "timestamp": datetime.now(timezone.utc).isoformat()})
+    project_root = Path(__file__).parent.parent
+    heartbeat_file = project_root / "state" / "heartbeat.json"
+    # Refresh the file's mtime + bump the last_keepalive field so the cron
+    # verifier can confirm it actually reached the worker (not just the LB).
+    try:
+        if heartbeat_file.exists():
+            with open(heartbeat_file, "r+") as f:
+                hb = json.load(f) or {}
+                hb["last_keepalive"] = datetime.now(timezone.utc).isoformat()
+                hb["keepalive_source"] = "health_endpoint"
+                f.seek(0)
+                json.dump(hb, f, indent=2)
+                f.truncate()
+        else:
+            with open(heartbeat_file, "w") as f:
+                json.dump({
+                    "last_keepalive": datetime.now(timezone.utc).isoformat(),
+                    "keepalive_source": "health_endpoint",
+                }, f, indent=2)
+    except Exception:
+        pass
+    return web.json_response({
+        "status": "ok",
+        "service": "hermes-trading",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+
 
 async def _status_handler(request):
     from aiohttp import web
