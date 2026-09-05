@@ -2,18 +2,36 @@
 
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 
-# Load .env from project root
+# Load .env from project root safely
 PROJECT_ROOT = Path(__file__).parent.parent
-load_dotenv(PROJECT_ROOT / ".env")
+env_path = PROJECT_ROOT / ".env"
+
+try:
+    from dotenv import load_dotenv
+    if env_path.exists():
+        load_dotenv(env_path)
+except ImportError:
+    # Manual .env loader fallback if python-dotenv is not installed
+    if env_path.exists():
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    k = k.strip()
+                    v = v.strip().strip("'\"")
+                    if k not in os.environ:
+                        os.environ[k] = v
 
 class Settings:
     """Configuration settings loaded from environment and defaults."""
 
     # Trading mode
-    TRADING_MODE: str = os.getenv("TRADING_MODE", "paper")
-    LIVE_TRADING_ENABLED: bool = os.getenv("LIVE_TRADING_ENABLED", "false").lower() == "true"
+    TRADING_MODE: str = os.getenv("HERMES_TRADING_MODE", os.getenv("TRADING_MODE", "paper"))
+    LIVE_TRADING_ENABLED: bool = (
+        os.getenv("HERMES_TRADING_I_ACCEPT_RISK", os.getenv("LIVE_TRADING_ENABLED", "false")).lower() == "true"
+    )
 
     # Exchange
     EXCHANGE_API_KEY: str = os.getenv("EXCHANGE_API_KEY", "")
@@ -26,7 +44,7 @@ class Settings:
     # Strategy parameters
     ASSET: str = os.getenv("ASSET", "BTC/USDT")
     MARKET: str = os.getenv("MARKET", "crypto")
-    EXCHANGE: str = os.getenv("EXCHANGE", "delta_testnet")
+    EXCHANGE: str = os.getenv("EXCHANGE", "binance")
     TIMEFRAME: str = os.getenv("TIMEFRAME", "5m")
 
     # Risk
@@ -37,20 +55,14 @@ class Settings:
     MAX_CONSECUTIVE_LOSSES: int = int(os.getenv("MAX_CONSECUTIVE_LOSSES", "3"))
 
     # Performance targets
-    TARGET_RETURN_30D: float = float(os.getenv("TARGET_RETURN_30D", "0.20"))
-    MIN_SHARPE: float = float(os.getenv("MIN_SHARPE", "1.2"))
+    TARGET_RETURN_30D: float = float(os.getenv("TARGET_RETURN_30D", "0.10"))
+    MIN_SHARPE: float = float(os.getenv("MIN_SHARPE", "2.0"))
 
     # Reflection
-    REFLECTION_EVERY: int = int(os.getenv("REFLECTION_EVERY", "5"))
+    REFLECTION_EVERY: int = int(os.getenv("REFLECTION_EVERY", "3"))
 
     # Operational
     WORKER_SLEEP_SECONDS: int = int(os.getenv("WORKER_SLEEP_SECONDS", "10"))
     HEARTBEAT_INTERVAL_SECONDS: int = int(os.getenv("HEARTBEAT_INTERVAL_SECONDS", "30"))
-
-    def __post_init__(self):
-        if self.TRADING_MODE not in ("paper", "live"):
-            raise ValueError(f"Invalid TRADING_MODE: {self.TRADING_MODE}")
-        if self.LIVE_TRADING_ENABLED and self.TRADING_MODE != "live":
-            raise ValueError("LIVE_TRADING_ENABLED=true requires TRADING_MODE=live")
 
 settings = Settings()

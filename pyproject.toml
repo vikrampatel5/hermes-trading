@@ -15,4 +15,5 @@ dependencies = [
     "numpy",
     "pandas",
     "rich",
+    "python-dotenv",
 ]
