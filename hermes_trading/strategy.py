@@ -50,9 +50,26 @@ class Strategy:
 
     @staticmethod
     def load_from_file(path: Path) -> "Strategy":
-        """Load strategy from YAML file."""
-        with open(path, "r") as f:
-            config = yaml.safe_load(f)
+        """Load strategy from YAML file, creating default if missing."""
+        path = Path(path)
+        if not path.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            default_strat = {
+                "version": "01",
+                "entry": {"indicator": "rsi", "threshold": 30, "direction": "long"},
+                "exit": {"take_profit_pct": 4.0, "stop_loss_pct": 2.0},
+                "position": {"size_pct": 5.0},
+                "stop_loss_pct": 2.0,
+                "position_size_r": 0.5
+            }
+            with open(path, "w", encoding="utf-8") as f:
+                yaml.dump(default_strat, f, default_flow_style=False, sort_keys=False)
+            s = Strategy()
+            s.from_dict(default_strat)
+            return s
+
+        with open(path, "r", encoding="utf-8") as f:
+            config = yaml.safe_load(f) or {}
         s = Strategy()
         s.from_dict(config)
         return s
